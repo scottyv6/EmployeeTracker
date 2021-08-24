@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/scottyv6/EmployeeTracker#readme",
   "dependencies": {
+    "bluebird": "^3.7.2",
     "console.table": "^0.10.0",
     "inquirer": "^8.1.2",
     "mysql2": "^2.3.0"

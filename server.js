@@ -1,29 +1,16 @@
 const inquirer = require('inquirer');
-const mysql = require('mysql2');
+//const mysql = require('mysql2');
 const cTable = require('console.table');
 
 const createConnection = require('./config/connection');
 
 const db = createConnection();
 
-// Connect to database
-// const db = mysql.createConnection(
-//     {
-//       host: 'localhost',
-//       // MySQL username,
-//       user: 'root',
-//       // MySQL password
-//       password: 'easy',
-//       database: 'employees_db'
-//     },
-//     console.log(`Connected to the employees_db database.`)
-//   );
-
-
-const mainMenuPrompt = {
+const mainMenuPrompt = [
+    {
     type: 'list',
     name: 'choice',
-    Message: 'What would you like to do?',
+    message: 'What would you like to do?',
     choices: [        
         'View All Departments',
         'View All Employees',
@@ -34,21 +21,60 @@ const mainMenuPrompt = {
         'Update Employee Role',
         'Quit'
     ],
-};
+}];
 
-const addDeptPrompt = {
+const addEmpPrompt = [
+    {
+        type: 'input',
+        name: 'newRole',
+        message: 'What is the name of the role?',
+    },
+    {
+        type: 'input',
+        name: 'salary',
+        message: 'What is the salary of the role?',
+    },
+    {
+        type: 'list',
+        name: 'dept',
+        message: 'Which department does the role belong to?',
+        //choices: `${deptArray}`,
+    },
+    {
+        type: 'list',
+        name: 'dept',
+        message: 'Wich department does the role belong to?',
+        //choices: `${deptArray}`,
+    },
+];
+
+const addDeptPrompt = [
+    {
     type: 'input',
     name: 'newDept',
-    Message: 'What is the name of the department?',
-};
+    message: 'What is the name of the department?',
+    },
+];
 
-const viewAllDept = () => {
-    db.query('SELECT * FROM department;', function(err, results) {
-        if (err) {
-            console.log(err);
-        }                
-        console.table(results);        
-    });
+// const viewAllDept = () => {
+//     db.query('SELECT * FROM department;', function(err, results) {
+//         if (err) {
+//             console.log(err);
+//         }                
+//         console.table(results);    
+//         init();    
+//     });
+// }
+
+const viewAllDept =  async () => {
+    try {
+        const departments = await db.query('SELECT * FROM department;');                     
+        console.table(departments);    
+        init();
+    } catch (err) {
+        console.log('ERROR => ' + err);
+        return err;
+    }        
 }
 
 const viewAllRoles = () => {
@@ -56,7 +82,8 @@ const viewAllRoles = () => {
         if (err) {
             console.log(err);
         }                
-        console.table(results);        
+        console.table(results);
+        init();        
     });
 }
 
@@ -65,27 +92,81 @@ const viewAllEmployees = () => {
         if (err) {
             console.log(err);
         }                
-        console.table(results);        
+        console.table(results);
+        init();      
     });
 }
 
 const addDepartment = () => {
-    inquirer.prompt(mainMenuPrompt).then((answer) => {    
-        db.query(`INSERT INTO department (name) VALUES (${answer.newDept});`, function(err, results) {
-        if (err) {
-            console.log(err);
-        }                
-        console.table(results);        
-        });        
+    inquirer.prompt(addDeptPrompt).then((result) => { 
+        const queryString = `INSERT INTO department (name) VALUES ('${result.newDept}');`;
+        
+        db.query(queryString, function(err, results) {
+            if (err) {
+                console.log(err);
+            }                
+        });
+        console.log(`Added ${result.newDept} to list of departments`);
+        init();        
     }).catch((error) => {
         console.log(error);
-    });
+    });    
 }
-    
+
+const addRoll = () => {
+    db.query('SELECT name FROM department;', function(err, results) {
+        if (err) {
+            console.log(err);
+        }
+        //initialArray contains all the departments in the form of an array of objects               
+        const initialArray = Object.values(results);
+        const deptArray = [];
+        
+        //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
+        for (let i = 0; i < initialArray.length; i++) {
+            let dept = JSON.stringify(initialArray[i]).split('"')[3];
+            deptArray.push(dept);
+        }
+        console.log('inside', deptArray);
+
+        const addRolePrompt = [
+            {
+                type: 'input',
+                name: 'newRole',
+                message: 'What is the name of the role?',
+            },
+            {
+                type: 'input',
+                name: 'salary',
+                message: 'What is the salary of the role?',
+            },
+            {
+                type: 'list',
+                name: 'dept',
+                message: 'Which department does the role belong to?',
+                choices: deptArray,
+            },
+        ];
+
+        inquirer.prompt(addRolePrompt).then((result) => { 
+
+            db.query(`INSERT INTO department (name) VALUES ('${result.newDept}');`, function(err, results) {
+                if (err) {
+                    console.log(err);
+                }        
+            });
+            console.log(`Added ${result.newDept} to list of departments`);
+            init();        
+        }).catch((error) => {
+            console.log(error);
+        });   
+       
+    });    
+}
 
 
-//SELECT r.id, r.title, d.name AS department, r.salary FROM role r JOIN department d ON r.department_id = d.id;
 
+function init() {
 inquirer.prompt(mainMenuPrompt).then((answer) => {    
     switch (answer.choice) {
         case 'View All Employees':
@@ -104,14 +185,19 @@ inquirer.prompt(mainMenuPrompt).then((answer) => {
             break;
         case 'Add Role':
             // function to be added
+            addRoll();
             break;
         case 'View All Departments':
             // function to be added
             viewAllDept();
             break;
+        case 'Add Department':
+            // function to be added
+            addDepartment();
+            break;
         case 'Quit':
             // function to be added
-            return;            
+            db.end();            
     }
     
 }).catch((error) => {
@@ -119,3 +205,6 @@ inquirer.prompt(mainMenuPrompt).then((answer) => {
 });
 
 console.log('end');
+}
+
+init();                         
