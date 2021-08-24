@@ -56,26 +56,26 @@ const addDeptPrompt = [
     },
 ];
 
-// const viewAllDept = () => {
-//     db.query('SELECT * FROM department;', function(err, results) {
-//         if (err) {
-//             console.log(err);
-//         }                
-//         console.table(results);    
-//         init();    
-//     });
-// }
-
-const viewAllDept =  async () => {
-    try {
-        const departments = await db.query('SELECT * FROM department;');                     
-        console.table(departments);    
-        init();
-    } catch (err) {
-        console.log('ERROR => ' + err);
-        return err;
-    }        
+const viewAllDept = () => {
+    db.query('SELECT * FROM department;', function(err, results) {
+        if (err) {
+            console.log(err);
+        }                
+        console.table(results);    
+        init();    
+    });
 }
+
+// const viewAllDept =  async () => {
+//     try {
+//         const departments = await db.query('SELECT * FROM department;');                     
+//         console.table(departments);    
+//         init();
+//     } catch (err) {
+//         console.log('ERROR => ' + err);
+//         return err;
+//     }        
+// }
 
 const viewAllRoles = () => {
     db.query('SELECT r.id, r.title, d.name AS department, r.salary FROM role r JOIN department d ON r.department_id = d.id;', function(err, results) {
@@ -120,6 +120,7 @@ const addRoll = () => {
         }
         //initialArray contains all the departments in the form of an array of objects               
         const initialArray = Object.values(results);
+        console.log('initialArray', initialArray);
         const deptArray = [];
         
         //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
@@ -149,18 +150,17 @@ const addRoll = () => {
         ];
 
         inquirer.prompt(addRolePrompt).then((result) => { 
-
-            db.query(`INSERT INTO department (name) VALUES ('${result.newDept}');`, function(err, results) {
+            
+            db.query(`INSERT INTO role (title, salary, department_id) SELECT '${result.newRole}', '${result.salary}', department.id FROM department WHERE name = '${result.dept}';`, function(err, results) {
                 if (err) {
                     console.log(err);
                 }        
             });
-            console.log(`Added ${result.newDept} to list of departments`);
+            console.log(`Added ${result.newRole} to list of roles`);
             init();        
         }).catch((error) => {
             console.log(error);
-        });   
-       
+        });       
     });    
 }
 
