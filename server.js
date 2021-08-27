@@ -66,17 +66,6 @@ const viewAllDept = () => {
     });
 }
 
-// const viewAllDept =  async () => {
-//     try {
-//         const departments = await db.query('SELECT * FROM department;');                     
-//         console.table(departments);    
-//         init();
-//     } catch (err) {
-//         console.log('ERROR => ' + err);
-//         return err;
-//     }        
-// }
-
 const viewAllRoles = () => {
     db.query('SELECT r.id, r.title, d.name AS department, r.salary FROM role r JOIN department d ON r.department_id = d.id;', function(err, results) {
         if (err) {
@@ -175,27 +164,23 @@ const addEmployee = () => {
             
         //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
         for (let i = 0; i < initialManagerArray.length; i++) {
-            console.log('row ', i, JSON.stringify(initialManagerArray[i]));
             let manager = JSON.stringify(initialManagerArray[i]).split('"')[5] + ' ' + JSON.stringify(initialManagerArray[i]).split('"')[9];
             managerArray.push(manager);
         }
-        console.log('managerArray', managerArray);
-
+        
         db.query('SELECT * FROM role;', function(err, results) {
             if (err) {
                 console.log(err);
             }
-            //initialArray contains all the departments in the form of an array of objects               
+            //initialArray contains all the columns from the role table in the form of an array of objects               
             const initialRoleArray = Object.values(results);
             const roleArray = [];
             
-            //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
+            //takes each object in the array, turns it into a string and the separates the role title only and pushes it to a new array
             for (let i = 0; i < initialRoleArray.length; i++) {
                 let role = JSON.stringify(initialRoleArray[i]).split('"')[5];
                 roleArray.push(role);
             }
-
-            console.log('roleArray', roleArray);
 
             const addEmpPrompt = [
                 {
@@ -243,10 +228,7 @@ const addEmployee = () => {
                             console.log(err);
                         }        
                     });
-                }
-
-               
-                
+                }                
 
                 console.log(`Added ${result.fn} ${result.ln} to list of employee's`);
 
@@ -256,43 +238,105 @@ const addEmployee = () => {
             });       
         });
     });
-}       
+}
 
+const updateEmpRole = () => {
+    db.query("SELECT CONCAT(first_name, ' ', last_name) FROM employee;", function(err, results) {
+        if (err) {
+            console.log(err);
+        }
 
+        const initialEmpArray = Object.values(results);
+        const employeeArray = [];
+
+        console.log('initialEmpArray', initialEmpArray);
+            
+        //takes each object in the array, turns it into a string and the separates the first and last name only and pushes i to a new array
+        for (let i = 0; i < initialEmpArray.length; i++) {
+            let employee = JSON.stringify(initialEmpArray[i]).split('"')[3];
+            employeeArray.push(employee);
+        }
+        console.log('employeeArray', employeeArray);
+
+        db.query('SELECT * FROM role;', function(err, results) {
+            if (err) {
+                console.log(err);
+            }
+            //initialArray contains all the columns from the role table in the form of an array of objects               
+            const initialRoleArray = Object.values(results);
+            const roleArray = [];
+            
+            //takes each object in the array, turns it into a string and the separates the role title only and pushes it to a new array
+            for (let i = 0; i < initialRoleArray.length; i++) {
+                let role = JSON.stringify(initialRoleArray[i]).split('"')[5];
+                roleArray.push(role);
+            }
+
+            console.log('roleArray', roleArray);
+
+            const updateEmpPrompt = [
+                {
+                    type: 'list',
+                    name: 'employee',
+                    message: "Which employee's role do you want to update?",
+                    choices: employeeArray,
+                },
+                {
+                    type: 'list',
+                    name: 'role',
+                    message: "Which role do you want to assign to the selected employee?",
+                    choices: roleArray,
+                },
+            ];
+
+            inquirer.prompt(updateEmpPrompt).then((result) => { 
+
+                const nameArray = result.employee.split(' ');
+                const  employeeFn = nameArray[0];
+                const  employeeLn = nameArray[1];
+
+                db.query(`UPDATE employee SET role_id = (SELECT role.id FROM role WHERE role.title = '${result.role}') WHERE first_name = '${employeeFn}' AND last_name = '${employeeLn}';`, function(err, results) {
+                    if (err) {
+                        console.log(err);
+                    }        
+                });
+                              
+                console.log(`updated employee's role.`);
+
+                init();        
+            }).catch((error) => {
+                console.log(error);
+            });       
+        });
+    });
+}
 
 
 function init() {
 inquirer.prompt(mainMenuPrompt).then((answer) => {    
     switch (answer.choice) {
         case 'View All Employees':
-            // function to be added
             viewAllEmployees();
             break;
         case 'Add Employee':
-            // function to be added
             addEmployee();
             break;
         case 'Update Employee Role':
-            // function to be added
+            updateEmpRole();
             break;
         case 'View All Roles':
-            // function to be added
             viewAllRoles();
             break;
         case 'Add Role':
-            // function to be added
             addRoll();
             break;
         case 'View All Departments':
-            // function to be added
             viewAllDept();
             break;
         case 'Add Department':
-            // function to be added
             addDepartment();
             break;
         case 'Quit':
-            // function to be added
             db.end();            
     }
     
@@ -300,7 +344,6 @@ inquirer.prompt(mainMenuPrompt).then((answer) => {
     console.log(error);
 });
 
-console.log('end');
 }
 
 init();                         
