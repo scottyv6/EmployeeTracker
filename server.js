@@ -2,10 +2,13 @@ const inquirer = require('inquirer');
 //const mysql = require('mysql2');
 const cTable = require('console.table');
 
+const art = require('ascii-art');
+
 const createConnection = require('./config/connection');
 
 const db = createConnection();
 
+// Prompt for the Main Menu inquirer function
 const mainMenuPrompt = [
     {
     type: 'list',
@@ -23,31 +26,7 @@ const mainMenuPrompt = [
     ],
 }];
 
-const addEmpPrompt = [
-    {
-        type: 'input',
-        name: 'newRole',
-        message: 'What is the name of the role?',
-    },
-    {
-        type: 'input',
-        name: 'salary',
-        message: 'What is the salary of the role?',
-    },
-    {
-        type: 'list',
-        name: 'dept',
-        message: 'Which department does the role belong to?',
-        //choices: `${deptArray}`,
-    },
-    {
-        type: 'list',
-        name: 'dept',
-        message: 'Wich department does the role belong to?',
-        //choices: `${deptArray}`,
-    },
-];
-
+// Prompt for the AddDepartment inquirer function
 const addDeptPrompt = [
     {
     type: 'input',
@@ -56,6 +35,7 @@ const addDeptPrompt = [
     },
 ];
 
+// Function to view all departments
 const viewAllDept = () => {
     db.query('SELECT * FROM department;', function(err, results) {
         if (err) {
@@ -66,6 +46,7 @@ const viewAllDept = () => {
     });
 }
 
+// Function to view all roles
 const viewAllRoles = () => {
     db.query('SELECT r.id, r.title, d.name AS department, r.salary FROM role r JOIN department d ON r.department_id = d.id;', function(err, results) {
         if (err) {
@@ -76,6 +57,7 @@ const viewAllRoles = () => {
     });
 }
 
+// Function to view all employee's
 const viewAllEmployees = () => {
     db.query("SELECT e.id, e.first_name, e.last_name , r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager FROM employee e Left JOIN employee m ON e.manager_id = m.id JOIN role r ON e.role_id = r.id JOIN department d ON r.department_id = d.id;", function(err, results) {
         if (err) {
@@ -86,6 +68,7 @@ const viewAllEmployees = () => {
     });
 }
 
+// Function to add a department
 const addDepartment = () => {
     inquirer.prompt(addDeptPrompt).then((result) => { 
         const queryString = `INSERT INTO department (name) VALUES ('${result.newDept}');`;
@@ -102,16 +85,18 @@ const addDepartment = () => {
     });    
 }
 
+
+// Function to add a roll
 const addRoll = () => {
     db.query('SELECT name FROM department;', function(err, results) {
         if (err) {
             console.log(err);
         }
-        //initialArray contains all the departments in the form of an array of objects               
+        //initialArray contains all the rolls in the form of an array of objects               
         const initialArray = Object.values(results);
         const deptArray = [];
         
-        //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
+        //takes each object in the array, turns it into a string and the separates the department name only and pushes it to a new array
         for (let i = 0; i < initialArray.length; i++) {
             let dept = JSON.stringify(initialArray[i]).split('"')[3];
             deptArray.push(dept);
@@ -151,6 +136,7 @@ const addRoll = () => {
     });    
 }
 
+// Function to add an employee
 const addEmployee = () => {
     db.query('SELECT * FROM employee;', function(err, results) {
         if (err) {
@@ -160,8 +146,6 @@ const addEmployee = () => {
         const initialManagerArray = Object.values(results);
         const managerArray = ['None'];
 
-        console.log('initialManagerArray', initialManagerArray);
-            
         //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
         for (let i = 0; i < initialManagerArray.length; i++) {
             let manager = JSON.stringify(initialManagerArray[i]).split('"')[5] + ' ' + JSON.stringify(initialManagerArray[i]).split('"')[9];
@@ -240,6 +224,7 @@ const addEmployee = () => {
     });
 }
 
+// Function to update an employee
 const updateEmpRole = () => {
     db.query("SELECT CONCAT(first_name, ' ', last_name) FROM employee;", function(err, results) {
         if (err) {
@@ -249,9 +234,7 @@ const updateEmpRole = () => {
         const initialEmpArray = Object.values(results);
         const employeeArray = [];
 
-        console.log('initialEmpArray', initialEmpArray);
-            
-        //takes each object in the array, turns it into a string and the separates the first and last name only and pushes i to a new array
+        //takes each object in the array, turns it into a string and pushes it to a new array
         for (let i = 0; i < initialEmpArray.length; i++) {
             let employee = JSON.stringify(initialEmpArray[i]).split('"')[3];
             employeeArray.push(employee);
@@ -311,7 +294,7 @@ const updateEmpRole = () => {
     });
 }
 
-
+// initial menu calling all required functions
 function init() {
 inquirer.prompt(mainMenuPrompt).then((answer) => {    
     switch (answer.choice) {
@@ -346,4 +329,13 @@ inquirer.prompt(mainMenuPrompt).then((answer) => {
 
 }
 
-init();                         
+
+// Render fancy title and then call init to start program
+art.font("Employee Manager", 'doom')
+       .then((rendered)=>{
+            console.log(rendered);
+            init();
+       }).catch((err)=>{
+            console.log(err);
+       });
+
