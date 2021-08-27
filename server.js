@@ -120,7 +120,6 @@ const addRoll = () => {
         }
         //initialArray contains all the departments in the form of an array of objects               
         const initialArray = Object.values(results);
-        console.log('initialArray', initialArray);
         const deptArray = [];
         
         //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
@@ -128,7 +127,6 @@ const addRoll = () => {
             let dept = JSON.stringify(initialArray[i]).split('"')[3];
             deptArray.push(dept);
         }
-        console.log('inside', deptArray);
 
         const addRolePrompt = [
             {
@@ -164,6 +162,103 @@ const addRoll = () => {
     });    
 }
 
+const addEmployee = () => {
+    db.query('SELECT * FROM employee;', function(err, results) {
+        if (err) {
+            console.log(err);
+        }
+
+        const initialManagerArray = Object.values(results);
+        const managerArray = ['None'];
+
+        console.log('initialManagerArray', initialManagerArray);
+            
+        //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
+        for (let i = 0; i < initialManagerArray.length; i++) {
+            console.log('row ', i, JSON.stringify(initialManagerArray[i]));
+            let manager = JSON.stringify(initialManagerArray[i]).split('"')[5] + ' ' + JSON.stringify(initialManagerArray[i]).split('"')[9];
+            managerArray.push(manager);
+        }
+        console.log('managerArray', managerArray);
+
+        db.query('SELECT * FROM role;', function(err, results) {
+            if (err) {
+                console.log(err);
+            }
+            //initialArray contains all the departments in the form of an array of objects               
+            const initialRoleArray = Object.values(results);
+            const roleArray = [];
+            
+            //takes each object in the array, turns it into a string and the separates the department name only and pushes i to a new array
+            for (let i = 0; i < initialRoleArray.length; i++) {
+                let role = JSON.stringify(initialRoleArray[i]).split('"')[5];
+                roleArray.push(role);
+            }
+
+            console.log('roleArray', roleArray);
+
+            const addEmpPrompt = [
+                {
+                    type: 'input',
+                    name: 'fn',
+                    message: "What is the employee's first name?",
+                },
+                {
+                    type: 'input',
+                    name: 'ln',
+                    message: "What is the employee's last name?",
+                },
+                {
+                    type: 'list',
+                    name: 'role',
+                    message: "What is the employee's role?",
+                    choices: roleArray,
+                },
+                {
+                    type: 'list',
+                    name: 'manager',
+                    message: "Who is the employee's manager?",
+                    choices: managerArray,
+                },
+            ];
+
+             
+
+            inquirer.prompt(addEmpPrompt).then((result) => { 
+
+                const nameArray = result.manager.split(' ');
+                const  managerFn = nameArray[0];
+                const  managerLn = nameArray[1];
+
+                if (managerFn === 'None') {
+                    db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) SELECT '${result.fn}', '${result.ln}', role.id, null FROM role WHERE role.title = '${result.role}';`, function(err, results) {
+                        if (err) {
+                            console.log(err);
+                        }        
+                    });
+                }
+                else {
+                    db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) SELECT '${result.fn}', '${result.ln}', role.id, employee.id FROM role, employee WHERE role.title = '${result.role}' AND employee.first_name = '${managerFn}' AND employee.last_name = '${managerLn}';`, function(err, results) {
+                        if (err) {
+                            console.log(err);
+                        }        
+                    });
+                }
+
+               
+                
+
+                console.log(`Added ${result.fn} ${result.ln} to list of employee's`);
+
+                init();        
+            }).catch((error) => {
+                console.log(error);
+            });       
+        });
+    });
+}       
+
+
 
 
 function init() {
@@ -175,6 +270,7 @@ inquirer.prompt(mainMenuPrompt).then((answer) => {
             break;
         case 'Add Employee':
             // function to be added
+            addEmployee();
             break;
         case 'Update Employee Role':
             // function to be added
